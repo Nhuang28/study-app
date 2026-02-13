@@ -7,7 +7,7 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True, nullable=False)
+    username = db.Column(db.String(100), unique=True, nullable=True)
     email = db.Column(db.String(255), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.Enum('student', 'teacher'), nullable=False)
@@ -21,7 +21,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f'<User {self.username}>'
+        return f'<User {self.email}>'
 
 @login.user_loader
 def load_user(id):
@@ -34,6 +34,8 @@ class Deck(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     visibility = db.Column(db.Enum('private', 'class'), default='private')
+    question_type = db.Column(db.Enum('flashcard', 'fill_gap', 'mcq'), default='flashcard', nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     cards = db.relationship('Card', backref='deck', lazy='dynamic', cascade='all, delete-orphan')
@@ -45,6 +47,51 @@ class Card(db.Model):
     card_type = db.Column(db.Enum('flashcard', 'fill_gap', 'mcq'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationships to subtypes are handled via backrefs in subtype models below
+
+class CardFlashcard(db.Model):
+    __tablename__ = 'card_flashcard'
+    card_id = db.Column(db.Integer, db.ForeignKey('cards.id'), primary_key=True)
+    front_text = db.Column(db.Text, nullable=True)
+    back_text = db.Column(db.Text, nullable=True)
+    cloze_template = db.Column(db.Text, nullable=True)
+    answers_json = db.Column(db.JSON, nullable=True)
+    
+    card = db.relationship('Card', backref=db.backref('flashcard', uselist=False, cascade='all, delete-orphan'))
+    
+    @property
+    def answers(self):
+        import json
+        return json.loads(self.answers_json) if self.answers_json else []
+
+class CardFillGap(db.Model):
+    __tablename__ = 'card_fill_gap'
+    card_id = db.Column(db.Integer, db.ForeignKey('cards.id'), primary_key=True)
+    question_text = db.Column(db.Text, nullable=False)
+    answers_json = db.Column(db.JSON, nullable=False)
+    
+    card = db.relationship('Card', backref=db.backref('fill_gap', uselist=False, cascade='all, delete-orphan'))
+    
+    @property
+    def answers(self):
+        import json
+        return json.loads(self.answers_json) if self.answers_json else []
+
+class CardMCQ(db.Model):
+    __tablename__ = 'card_mcq'
+    card_id = db.Column(db.Integer, db.ForeignKey('cards.id'), primary_key=True)
+    question_text = db.Column(db.Text, nullable=False)
+    options_json = db.Column(db.JSON, nullable=False)
+    correct_index = db.Column(db.Integer, nullable=False)
+    explanation_text = db.Column(db.Text, nullable=True)
+    
+    card = db.relationship('Card', backref=db.backref('mcq', uselist=False, cascade='all, delete-orphan'))
+    
+    @property
+    def options(self):
+        import json
+        return json.loads(self.options_json) if self.options_json else []
+
 class CardProgress(db.Model):
     __tablename__ = 'card_progress'
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
@@ -52,6 +99,7 @@ class CardProgress(db.Model):
     next_review_date = db.Column(db.Date, nullable=True)
     ease_factor = db.Column(db.Numeric(4, 2), default=2.50)
     interval_days = db.Column(db.Integer, default=0)
+    repetitions = db.Column(db.Integer, default=0)
 
 class Class(db.Model):
     __tablename__ = 'classes'
@@ -73,5 +121,15 @@ class ClassMember(db.Model):
     
     # Relationship to Student (User)
     student = db.relationship('User', backref='enrolled_classes', foreign_keys=[student_id])
+
+class StudyResult(db.Model):
+    __tablename__ = 'study_results'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    deck_id = db.Column(db.Integer, db.ForeignKey('decks.id'), nullable=False)
+    score = db.Column(db.Integer, default=0)
+    max_score = db.Column(db.Integer, default=0)
+    question_type = db.Column(db.String(50), nullable=False) # Store current type string
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
