@@ -47,7 +47,6 @@ class Card(db.Model):
     card_type = db.Column(db.Enum('flashcard', 'fill_gap', 'mcq'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationships to subtypes are handled via backrefs in subtype models below
 
 class CardFlashcard(db.Model):
     __tablename__ = 'card_flashcard'
@@ -109,7 +108,6 @@ class Class(db.Model):
     invite_code = db.Column(db.String(6), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
     teacher = db.relationship('User', backref='taught_classes', foreign_keys=[teacher_id])
     members = db.relationship('ClassMember', backref='enrolled_class', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -119,7 +117,6 @@ class ClassMember(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationship to Student (User)
     student = db.relationship('User', backref='enrolled_classes', foreign_keys=[student_id])
 
 class StudyResult(db.Model):
@@ -129,7 +126,7 @@ class StudyResult(db.Model):
     deck_id = db.Column(db.Integer, db.ForeignKey('decks.id'), nullable=False)
     score = db.Column(db.Integer, default=0)
     max_score = db.Column(db.Integer, default=0)
-    question_type = db.Column(db.String(50), nullable=False) # Store current type string
+    question_type = db.Column(db.String(50), nullable=False)
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 

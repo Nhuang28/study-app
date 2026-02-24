@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{{ class_obj.name }} - Study App{% endblock %}
+
+{% block content %}
+<div class="relative flex h-auto min-h-screen w-full flex-col max-w-md mx-auto bg-[#E8E9E8] overflow-x-hidden">
+    <div
+        class="flex items-center bg-[#E8E9E8] p-4 pb-2 justify-between sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+        <a href="{{ url_for('main.dashboard') }}" class="text-black flex size-12 shrink-0 items-center cursor-pointer">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </a>
+        <h2 class="text-black text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
+            {{ class_obj.name }}</h2>
+        <div class="flex w-12 items-center justify-end">
+            {% if is_teacher %}
+            <form action="{{ url_for('classes.delete', class_id=class_obj.id) }}" method="POST"
+                onsubmit="return confirm('Delete this class? This cannot be undone.');">
+                <button type="submit"
+                    class="flex size-10 items-center justify-center bg-black text-red-500 rounded-lg hover:bg-gray-900 transition-colors">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-2 p-4">
+        <h3 class="text-black tracking-light text-2xl font-bold leading-tight text-left">Class Invite Code</h3>
+        <div class="flex items-center justify-center rounded-xl bg-white p-8 shadow-sm border border-gray-200">
+            <p class="text-black text-4xl font-black leading-tight tracking-widest">{{ class_obj.invite_code }}</p>
+        </div>
+    </div>
+
+
+
+    <div class="flex items-center justify-between px-4 pt-4">
+        <h2 class="text-black text-[22px] font-bold leading-tight tracking-[-0.015em]">Students</h2>
+    </div>
+    <div class="px-4 py-4 space-y-2">
+        {% for member in class_obj.members %}
+        <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-200">
+            <div
+                class="size-10 rounded-full bg-black/5 flex items-center justify-center text-black font-bold border border-black/10">
+                {{ member.student.email[:2].upper() }}
+            </div>
+            <div class="flex flex-col">
+                <span class="text-black font-bold text-sm">{{ member.student.email.split('@')[0] }}</span>
+                <span class="text-gray-500 text-xs">{{ member.student.email }}</span>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm italic">No students joined yet.</p>
+        {% endfor %}
+    </div>
+
+    <div class="flex items-center justify-between px-4 pt-4 border-t border-gray-200">
+        <h2 class="text-black text-[22px] font-bold leading-tight tracking-[-0.015em]">Class Decks
+        </h2>
+        {% if is_teacher %}
+        <a href="{{ url_for('decks.create', visibility='class', class_id=class_obj.id) }}"
+            class="text-primary text-sm font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Deck
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="px-4 py-4 space-y-3">
+        {% for deck in decks %}
+        <div class="flex items-center p-3 rounded-xl bg-white border border-gray-200">
+            <div class="size-12 rounded-lg bg-black flex items-center justify-center text-white">
+                <span class="material-symbols-outlined">school</span>
+            </div>
+            <div class="ml-3 flex-1">
+                <p class="text-sm font-bold text-black">{{ deck.title }}</p>
+                <p class="text-xs text-gray-500">{{ deck.cards.count() }} cards</p>
+            </div>
+
+            <a href="{{ url_for('decks.view', deck_id=deck.id) }}"
+                class="text-gray-400 hover:text-black p-2 rounded-full">
+                <span class="material-symbols-outlined">arrow_forward_ios</span>
+            </a>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center text-sm py-4">No decks in this class yet.</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Create New Deck - Study App</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#000000",
+                        "background": "#E8E9E8",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: #E8E9E8;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+
+<body class="bg-[#E8E9E8] text-black min-h-screen flex justify-center">
+    <form method="POST" action="{{ url_for('decks.create') }}"
+        class="relative flex h-full min-h-screen w-full max-w-[430px] flex-col bg-[#E8E9E8] overflow-x-hidden font-display pb-32">
+
+        <!-- Header -->
+        <div class="flex items-center bg-[#E8E9E8] p-4 pb-2 justify-between sticky top-0 z-10">
+            <a href="{{ url_for('main.dashboard') }}"
+                class="text-black flex size-12 shrink-0 items-center justify-start cursor-pointer">
+                <span class="material-symbols-outlined text-black">close</span>
+            </a>
+            <h2 class="text-black text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Create New
+                Deck</h2>
+        </div>
+
+        <div class="px-4 pt-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="space-y-2 mb-6">
+                {% for category, message in messages %}
+                <div
+                    class="p-4 rounded-xl shadow-sm border border-black/10 {% if category == 'error' %}bg-red-50 text-red-600{% else %}bg-green-50 text-green-600{% endif %} flex items-center gap-2 font-medium">
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="space-y-6">
+                <div class="space-y-2">
+                    <label class="block text-black text-base font-bold">Deck Title</label>
+                    <input name="title" required autoFocus
+                        class="w-full rounded-xl bg-white border border-gray-300 text-black focus:border-black focus:ring-black h-14 px-4 text-base font-medium placeholder-gray-400"
+                        placeholder="e.g., Biology 101" />
+                </div>
+
+                {% if request.args.get('class_id') and request.args.get('visibility') == 'class' %}
+                <input type="hidden" name="visibility" value="class">
+                <input type="hidden" name="class_id" value="{{ request.args.get('class_id') }}">
+
+                <div class="p-4 rounded-xl bg-blue-50 border border-blue-100 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-blue-600">school</span>
+                    <div>
+                        <p class="text-sm font-bold text-blue-800">Class Assignment</p>
+                        <p class="text-xs text-blue-600">This deck will be added to your class automatically.</p>
+                    </div>
+                </div>
+
+                {% else %}
+                {% if current_user.role == 'teacher' %}
+                <div class="space-y-3">
+                    <p class="text-black text-base font-bold">Visibility</p>
+                    <div class="flex p-1 bg-white rounded-xl border border-gray-200">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="visibility" value="private" class="peer hidden" checked
+                                onchange="toggleClassSelect(false)">
+                            <div
+                                class="flex items-center justify-center py-2.5 rounded-lg text-gray-500 font-bold transition-all peer-checked:bg-black peer-checked:text-white">
+                                <span class="material-symbols-outlined text-lg mr-2">lock</span>
+                                Private
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="visibility" value="class" class="peer hidden"
+                                onchange="toggleClassSelect(true)">
+                            <div
+                                class="flex items-center justify-center py-2.5 rounded-lg text-gray-500 font-bold transition-all peer-checked:bg-black peer-checked:text-white">
+                                <span class="material-symbols-outlined text-lg mr-2">groups</span>
+                                Class
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="class-select-container" class="hidden space-y-2">
+                    <label class="block text-black text-base font-bold">Select Class</label>
+                    <div class="relative">
+                        <select name="class_id" id="class-select"
+                            class="w-full rounded-xl bg-white border border-gray-300 text-black focus:border-black focus:ring-black h-14 px-4 text-base font-medium appearance-none">
+                            <option value="" disabled selected>Choose a class...</option>
+                            {% for class in classes %}
+                            <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-500">
+                            <span class="material-symbols-outlined">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <input type="hidden" name="visibility" value="private">
+                {% endif %}
+                {% endif %}
+                <div class="space-y-3">
+                    <p class="text-black text-base font-bold">Question Type</p>
+                    <div class="flex flex-col space-y-3">
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="question_type" value="flashcard" class="peer hidden" checked>
+                            <div
+                                class="p-4 rounded-xl bg-white border border-gray-200 flex items-center gap-4 transition-all peer-checked:border-black peer-checked:ring-1 peer-checked:ring-black group-hover:border-gray-400">
+                                <div class="size-12 rounded-lg bg-black flex items-center justify-center text-white">
+                                    <span class="material-symbols-outlined">style</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-black">Flashcard</p>
+                                    <p class="text-xs text-gray-500">Classic two-sided cards</p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="question_type" value="fill_gap" class="peer hidden">
+                            <div
+                                class="p-4 rounded-xl bg-white border border-gray-200 flex items-center gap-4 transition-all peer-checked:border-black peer-checked:ring-1 peer-checked:ring-black group-hover:border-gray-400">
+                                <div class="size-12 rounded-lg bg-black flex items-center justify-center text-white">
+                                    <span class="material-symbols-outlined">edit_note</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-black">Fill in the gap</p>
+                                    <p class="text-xs text-gray-500">Complete the missing words</p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="question_type" value="mcq" class="peer hidden">
+                            <div
+                                class="p-4 rounded-xl bg-white border border-gray-200 flex items-center gap-4 transition-all peer-checked:border-black peer-checked:ring-1 peer-checked:ring-black group-hover:border-gray-400">
+                                <div class="size-12 rounded-lg bg-black flex items-center justify-center text-white">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-black">Multiple Choice</p>
+                                    <p class="text-xs text-gray-500">Select one correct answer</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-[#E8E9E8] border-t border-black/5">
+            <div class="max-w-[430px] mx-auto">
+                <button type="submit" class="w-full bg-black text-white font-bold py-4 rounded-xl shadow-lg text-lg">
+                    Create Deck
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+    <script>
+        function toggleClassSelect(show) {
+            const container = document.getElementById('class-select-container');
+            const select = document.getElementById('class-select');
+            if (show) {
+                container.classList.remove('hidden');
+                select.required = true;
+            } else {
+                container.classList.add('hidden');
+                select.required = false;
+                select.value = "";
+            }
+        }
+    </script>
+</body>
+
+</html>

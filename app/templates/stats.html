@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}My Stats - Study App{% endblock %}
+
+{% block styles %}
+<style>
+    body {
+        background-color: #E8E9E8 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Navigation Bar (Simplified) -->
+<div class="sticky top-0 z-50 bg-[#E8E9E8]">
+    <div class="flex items-center p-4 pb-2 justify-between max-w-md mx-auto">
+        <h2 class="text-2xl font-bold leading-tight tracking-tight flex-1 text-black">My Stats</h2>
+    </div>
+</div>
+
+<div class="bg-[#E8E9E8] text-black min-h-screen">
+    <main class="max-w-md mx-auto pb-24">
+        <section class="px-4 mt-6">
+            <form action="{{ url_for('main.stats') }}" method="GET"
+                class="flex gap-2 items-center justify-between bg-white rounded-lg p-2 shadow-sm">
+                <div class="flex flex-col">
+                    <label for="start_date" class="text-[10px] text-gray-500 font-bold uppercase">From</label>
+                    <input type="month" id="start_date" name="start_date" value="{{ start_date }}"
+                        class="text-xs border-none bg-transparent focus:ring-0 p-0 text-black font-semibold">
+                </div>
+                <span class="text-gray-300">|</span>
+                <div class="flex flex-col">
+                    <label for="end_date" class="text-[10px] text-gray-500 font-bold uppercase">To</label>
+                    <input type="month" id="end_date" name="end_date" value="{{ end_date }}"
+                        class="text-xs border-none bg-transparent focus:ring-0 p-0 text-black font-semibold">
+                </div>
+                <button type="submit"
+                    class="bg-black text-white text-xs px-3 py-2 rounded-md font-bold hover:bg-gray-800 transition">Filter</button>
+            </form>
+        </section>
+        <section class="px-4 mt-4">
+            <div class="bg-black w-full rounded-2xl p-6 flex justify-between items-center text-center">
+                <div class="flex-1 flex flex-col items-center">
+                    <p class="text-gray-400 text-xs font-light mb-1">Points</p>
+                    <p class="text-white text-3xl font-bold">{{ total_points }}</p>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                    <p class="text-gray-400 text-xs font-light mb-1">Attempted questions</p>
+                    <p class="text-white text-3xl font-bold">{{ attempted_questions }}</p>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                    <p class="text-gray-400 text-xs font-light mb-1">Accuracy</p>
+                    <p class="text-white text-3xl font-bold">{{ accuracy }}%</p>
+                </div>
+            </div>
+        </section>
+        <section class="px-4 py-2 mt-4">
+            <div class="bg-black rounded-2xl p-6 shadow-sm border border-black">
+
+                <div class="flex">
+                    <div class="flex flex-col justify-between text-[#92a9c9] text-[10px] font-bold mr-2 h-[220px] py-1">
+                        <span>100%</span>
+                        <span>80%</span>
+                        <span>60%</span>
+                        <span>40%</span>
+                        <span>20%</span>
+                        <span>0%</span>
+                    </div>
+
+                    <div class="relative h-[220px] flex-1 flex items-end justify-between px-2">
+                        {% if monthly_accuracy %}
+                        <svg class="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <!-- Gradient Definition -->
+                            <defs>
+                                <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                                    <stop offset="0%" stop-color="#136dec" stop-opacity="0.3"></stop>
+                                    <stop offset="100%" stop-color="#136dec" stop-opacity="0"></stop>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Compute Path for Line and Area -->
+                            <!-- Data Y is inverted: 0 is top, 100 is bottom. So value 80% -> y=20 -->
+                            {% set points = [] %}
+                            {% for acc in monthly_accuracy %}
+                            {% if monthly_accuracy|length > 1 %}
+                            {% set x = (loop.index0 / (monthly_accuracy|length - 1)) * 100 %}
+                            {% else %}
+                            {% set x = 50 %} <!-- Center single point -->
+                            {% endif %}
+                            {% set y = 100 - acc %}
+                            {% set _ = points.append(x ~ ',' ~ y) %}
+                            {% endfor %}
+
+                            {% set polyline_points = points|join(' ') %}
+
+                            <!-- Area (filled below line) -->
+                            <polygon points="0,100 {{ polyline_points }} 100,100" fill="url(#chartGradient)" />
+
+                            <!-- Line -->
+                            <polyline points="{{ polyline_points }}" fill="none" stroke="#136dec" stroke-width="2"
+                                vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" />
+
+                            <!-- Points and Tooltips -->
+                            {% for acc in monthly_accuracy %}
+                            {% if monthly_accuracy|length > 1 %}
+                            {% set x = (loop.index0 / (monthly_accuracy|length - 1)) * 100 %}
+                            {% else %}
+                            {% set x = 50 %}
+                            {% endif %}
+                            {% set y = 100 - acc %}
+                            <circle cx="{{ x }}" cy="{{ y }}" r="1.5" fill="#136dec" stroke="white"
+                                stroke-width="1.5" />
+                            {% endfor %}
+                        </svg>
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No data for
+                            selected range</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- X-Axis Labels -->
+                <div class="flex justify-between mt-4 px-1 pl-0">
+                    {% for label in month_labels %}
+                    <!-- Show specific labels to avoid overcrowding? For now show all, maybe use CSS to hide if too many -->
+                    <span class="text-[#92a9c9] text-[8px] font-bold">{{ label }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+<nav class="fixed bottom-0 left-0 right-0 bg-[#E8E9E8] border-t border-black/5 px-6 pb-6 pt-2">
+    <div class="max-w-md mx-auto flex justify-between items-center px-4">
+        <a class="flex flex-col items-center gap-1 text-gray-500 hover:text-black"
+            href="{{ url_for('main.dashboard') }}">
+            <span class="material-symbols-outlined">home</span>
+            <span class="text-[10px] font-medium">Home</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-500 hover:text-black" href="{{ url_for('decks.list') }}">
+            <span class="material-symbols-outlined">layers</span>
+            <span class="text-[10px] font-medium">Decks</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-black" href="{{ url_for('main.stats') }}">
+            <span class="material-symbols-outlined fill-1">bar_chart</span>
+            <span class="text-[10px] font-bold">Stats</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-500 hover:text-black" href="{{ url_for('auth.logout') }}">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="text-[10px] font-medium">Log out</span>
+        </a>
+    </div>
+</nav>
+{% endblock %}
