@@ -36,6 +36,99 @@ Handles the bridging logic between teachers and students.
 - **Invite Codes**: `generate_invite_code()` dynamically rolls unique 6-character alphanumeric combinations, ensuring no duplicates exist in the database.
 - **Access Verification**: During deck and class viewings, backend assertions check student enrollment via the `ClassMember` mapping table before granting access to class-specific, private study decks.
 
+## Database Model
+
+```mermaid
+erDiagram
+    users {
+        int id PK
+        string username UK "nullable"
+        string email UK "nullable"
+        string password_hash
+        enum role "student, teacher"
+        datetime last_active_at
+        datetime created_at
+    }
+    
+    classes {
+        int id PK
+        int teacher_id FK
+        string name
+        string invite_code UK
+        datetime created_at
+    }
+    
+    class_members {
+        int class_id PK, FK
+        int student_id PK, FK
+        datetime joined_at
+    }
+    
+    decks {
+        int id PK
+        int owner_id FK
+        string title
+        text description
+        enum visibility "private, class"
+        enum question_type "flashcard, mcq"
+        int class_id FK "nullable"
+        datetime created_at
+    }
+    
+    cards {
+        int id PK
+        int deck_id FK
+        enum card_type "flashcard, mcq"
+        datetime created_at
+    }
+    
+    card_flashcard {
+        int card_id PK, FK
+        text front_text
+        text back_text
+    }
+    
+    card_mcq {
+        int card_id PK, FK
+        text question_text
+        json options_json
+        int correct_index
+        text explanation_text
+    }
+    
+    card_progress {
+        int user_id PK, FK
+        int card_id PK, FK
+        date next_review_date
+        float ease_factor
+        int interval_days
+        int repetitions
+    }
+    
+    study_results {
+        int id PK
+        int user_id FK
+        int deck_id FK
+        int score
+        int max_score
+        string question_type
+        datetime completed_at
+    }
+
+    users ||--o{ classes : "teaches"
+    users ||--o{ class_members : "enrolls as student"
+    classes ||--o{ class_members : "has members"
+    users ||--o{ decks : "owns"
+    classes ||--o{ decks : "contains visibility"
+    decks ||--o{ cards : "contains"
+    cards ||--o| card_flashcard : "is a (1-to-1)"
+    cards ||--o| card_mcq : "is a (1-to-1)"
+    users ||--o{ card_progress : "tracks memory"
+    cards ||--o{ card_progress : "has progress"
+    users ||--o{ study_results : "achieves"
+    decks ||--o{ study_results : "yields result"
+```
+
 ## Tech Stack
 - **Backend Framework**: Flask (Python)
 - **Database ORM**: SQLAlchemy with Flask-Migrate setup (`app.db` SQLite)

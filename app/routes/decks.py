@@ -214,7 +214,7 @@ def ai_generate(deck_id):
         from dotenv import load_dotenv
         from app.models import Card, CardMCQ
         
-        load_dotenv()
+        load_dotenv(override=True)
         api_key = os.getenv('GEMINI_API_KEY')
         
         if not api_key:
